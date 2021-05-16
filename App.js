@@ -2,6 +2,7 @@ import { StatusBar } from "expo-status-bar";
 import React from "react";
 import { Alert } from "react-native";
 import Loading from "./Loading";
+import Weather from "./Weather";
 import * as Location from "expo-location";
 import axios from "axios";
 
@@ -11,12 +12,27 @@ export default class extends React.Component {
   state = {
     isLoading: true,
   };
+
   getWeather = async (latitude, longitude) => {
-    const { data } = await axios.get(
-      `http://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${API_KEY}`
+    const {
+      data: {
+        main: { temp },
+        weather,
+      },
+    } = await axios.get(
+      `http://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${API_KEY}&units=metric`
     );
-    console.log(data);
+
+    this.setState({
+      isLoading: false,
+      temp: temp,
+      description: weather[0].main,
+    });
   };
+
+  componentDidMount() {
+    return this.getLocation();
+  }
 
   getLocation = async () => {
     try {
@@ -26,18 +42,17 @@ export default class extends React.Component {
       } = await Location.getCurrentPositionAsync();
       console.log(longitude, latitude);
       this.getWeather(latitude, longitude);
-      this.setState({
-        isLoading: false,
-      });
     } catch (error) {
       Alert.alret("Sorry", "it's sad to say");
     }
   };
-  componentDidMount() {
-    return this.getLocation();
-  }
+
   render() {
-    const { isLoading } = this.state;
-    return isLoading ? <Loading /> : null;
+    const { isLoading, temp, description } = this.state;
+    return isLoading ? (
+      <Loading />
+    ) : (
+      <Weather temp={Math.round(temp)} description={description} />
+    );
   }
 }
